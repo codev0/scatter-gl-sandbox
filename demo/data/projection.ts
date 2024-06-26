@@ -18,6 +18,8 @@ limitations under the License.
 export interface Data {
   labels: number[];
   labelNames: string[];
+  groups?: number[];
+  groupNames?: string[];
   projection: [number, number, number][];
 }
 

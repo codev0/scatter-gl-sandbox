@@ -18,7 +18,13 @@ limitations under the License.
 import * as THREE from 'three';
 import {OrbitControls} from 'three/examples/jsm/controls/OrbitControls';
 
-import {CameraType, LabelRenderParams, RenderContext} from './render';
+import {
+  CameraType,
+  ImagesRenderParams,
+  LabelRenderParams,
+  RenderContext,
+  GroupRenderParams,
+} from './render';
 import {Styles} from './styles';
 import {Optional, Point2D, Point3D, InteractionMode} from './types';
 import * as util from './util';
@@ -131,6 +137,8 @@ export class ScatterPlot {
   private pointColors = new Float32Array(0);
   private pointScaleFactors = new Float32Array(0);
   private labels?: LabelRenderParams;
+  private groups?: GroupRenderParams;
+  private images?: ImagesRenderParams;
   private polylineColors: {[polylineIndex: number]: Float32Array} = {};
   private polylineOpacities = new Float32Array(0);
   private polylineWidths = new Float32Array(0);
@@ -777,6 +785,8 @@ export class ScatterPlot {
       this.pointColors,
       this.pointScaleFactors,
       this.labels,
+      this.images,
+      this.groups,
       this.polylineColors,
       this.polylineOpacities,
       this.polylineWidths
@@ -817,6 +827,15 @@ export class ScatterPlot {
   /** Set the labels to rendered */
   setLabels(labels: LabelRenderParams) {
     this.labels = labels;
+  }
+
+  setGroups(groups: GroupRenderParams) {
+    this.groups = groups;
+  }
+
+  /** Set the images to rendered */
+  setImages(images: ImagesRenderParams) {
+    this.images = images;
   }
 
   /** Set the colors for every data polyline. (RGB triplets) */

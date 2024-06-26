@@ -33,6 +33,36 @@ export class LabelRenderParams {
   ) {}
 }
 
+/**
+ * LabelRenderParams describes the set of points that should have labels
+ * rendered next to them.
+ */
+export class GroupRenderParams {
+  constructor(
+    public items: Map<string, number[]>,
+    public scaleFactors: Float32Array,
+    public useSceneOpacityFlags: Int8Array,
+    public defaultFontSize: number,
+    public fillColors: Uint8Array,
+    public strokeColors: Uint8Array
+  ) {}
+}
+
+/**
+ * ImagesRenderParams describes the set of points that should have labels
+ * rendered next to them.
+ */
+export class ImagesRenderParams {
+  constructor(
+    public pointIndices: Float32Array,
+    public imageUrls: string[],
+    public scaleFactors: Float32Array,
+    public useSceneOpacityFlags: Int8Array,
+    public fillColors: Uint8Array,
+    public strokeColors: Uint8Array
+  ) {}
+}
+
 /** Details about the camera projection being used to render the scene. */
 export enum CameraType {
   Perspective,
@@ -60,6 +90,8 @@ export class RenderContext {
     public pointColors: Float32Array,
     public pointScaleFactors: Float32Array,
     public labels: LabelRenderParams | undefined,
+    public images: ImagesRenderParams | undefined,
+    public groups: GroupRenderParams | undefined,
     public polylineColors: {[polylineIndex: number]: Float32Array},
     public polylineOpacities: Float32Array,
     public polylineWidths: Float32Array

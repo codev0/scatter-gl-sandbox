@@ -270,7 +270,9 @@ export class ScatterPlotVisualizerSprites implements ScatterPlotVisualizer {
         this.spriteIndexBufferAttribute
       );
     }
-    scene.add(this.points);
+    const group = new THREE.Group();
+    group.add(this.points);
+    scene.add(group);
   }
 
   private calculatePointSize(sceneIs3D: boolean): number {

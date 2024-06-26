@@ -23,7 +23,11 @@ import {
 } from './scatter_plot';
 import {parseColor} from './color';
 import {Dataset, Sequence} from './data';
-import {LabelRenderParams} from './render';
+import {
+  ImagesRenderParams,
+  LabelRenderParams,
+  GroupRenderParams,
+} from './render';
 import {Styles, UserStyles, makeStyles} from './styles';
 import {InteractionMode, Optional, RenderMode} from './types';
 import * as util from './util';
@@ -33,6 +37,8 @@ import {ScatterPlotVisualizer} from './scatter_plot_visualizer';
 import {ScatterPlotVisualizer3DLabels} from './scatter_plot_visualizer_3d_labels';
 import {ScatterPlotVisualizerSprites} from './scatter_plot_visualizer_sprites';
 import {ScatterPlotVisualizerCanvasLabels} from './scatter_plot_visualizer_canvas_labels';
+import {ScatterPlotVisualizerCanvasGroups} from './scatter_plot_visualizer_canvas_groups';
+import {ScatterPlotVisualizerCanvasImages} from './scatter_plot_visualizer_canvas_images';
 import {ScatterPlotVisualizerPolylines} from './scatter_plot_visualizer_polylines';
 
 export type PointColorer = (
@@ -71,9 +77,12 @@ export class ScatterGL {
   private rotateOnStart = true;
   private selectEnabled = true;
   private showLabelsOnHover = true;
+  private showGroups = true;
 
   /* Visualizers, maintained by ScatterGL but used by ScatterPlot */
   private canvasLabelsVisualizer?: ScatterPlotVisualizerCanvasLabels;
+  private canvasGroupsVisualizer?: ScatterPlotVisualizerCanvasGroups;
+  private canvasImagesVisualizer?: ScatterPlotVisualizerCanvasImages;
   private labels3DVisualizer?: ScatterPlotVisualizer3DLabels;
   private pointVisualizer?: ScatterPlotVisualizerSprites;
   private polylineVisualizer?: ScatterPlotVisualizerPolylines;
@@ -132,6 +141,8 @@ export class ScatterGL {
 
   private clearVisualizers() {
     this.canvasLabelsVisualizer = undefined;
+    this.canvasGroupsVisualizer = undefined;
+    this.canvasImagesVisualizer = undefined;
     this.labels3DVisualizer = undefined;
     this.pointVisualizer = undefined;
     this.polylineVisualizer = undefined;
@@ -197,6 +208,8 @@ export class ScatterGL {
       this.renderScatterPlot();
     }
   }
+
+  setGroupLabels(groupLabels: string[]) {}
 
   setPointColorer(pointColorer: PointColorer | null) {
     this.pointColorer = pointColorer;
@@ -287,10 +300,14 @@ export class ScatterGL {
     const pointColors = this.generatePointColorArray(dataset);
     const pointScaleFactors = this.generatePointScaleFactorArray(dataset);
     const labels = this.generateVisibleLabelRenderParams();
+    const groups = this.generateVisibleGroupRenderParams();
+    const images = this.generateVisibleImagesRenderParams();
 
     this.scatterPlot.setPointColors(pointColors);
     this.scatterPlot.setPointScaleFactors(pointScaleFactors);
     this.scatterPlot.setLabels(labels);
+    groups && this.scatterPlot.setGroups(groups);
+    this.scatterPlot.setImages(images);
   }
 
   private updatePolylineAttributes() {
@@ -435,6 +452,150 @@ export class ScatterGL {
       scale,
       opacityFlags,
       styles.label.fontSize,
+      fillColors,
+      strokeColors
+    );
+  }
+
+  private generateVisibleGroupRenderParams(): GroupRenderParams | null {
+    const {dataset, styles} = this;
+    const n = 1;
+
+    const scale = new Float32Array(n);
+    const opacityFlags = new Int8Array(n);
+    const fillColors = new Uint8Array(n * 3);
+    const strokeColors = new Uint8Array(n * 3);
+
+    if (this.showGroups) {
+      scale.fill(styles.label.scaleDefault);
+      opacityFlags.fill(1);
+
+      const fillRgb = util.styleRgbFromHexColor(styles.label.fillColorHover);
+      const m = new Map<string, number[]>();
+      dataset?.metadata.forEach((d, i) => {
+        scale[i] = styles.label.scaleLarge;
+        opacityFlags[i] = 0;
+        util.packRgbIntoUint8Array(
+          fillColors,
+          i,
+          fillRgb[0],
+          fillRgb[1],
+          fillRgb[2]
+        );
+        const strokeRgb = util.styleRgbFromHexColor(
+          styles.label.strokeColorHover
+        );
+        util.packRgbIntoUint8Array(
+          strokeColors,
+          i,
+          strokeRgb[0],
+          strokeRgb[1],
+          strokeRgb[1]
+        );
+        if (d.group) {
+          const group = d.group;
+          if (m.has(group)) {
+            m.get(group)?.push(i);
+          } else {
+            m.set(group, [i]);
+          }
+        }
+      });
+      return new GroupRenderParams(
+        m,
+        scale,
+        opacityFlags,
+        styles.label.fontSize,
+        fillColors,
+        strokeColors
+      );
+    }
+
+    return null;
+  }
+
+  private generateVisibleImagesRenderParams(): ImagesRenderParams {
+    const {hoverPointIndex, selectedPointIndices, styles} = this;
+    const n = selectedPointIndices.size + (hoverPointIndex !== null ? 1 : 0);
+
+    const visibleLabels = new Uint32Array(n);
+    const scale = new Float32Array(n);
+    const opacityFlags = new Int8Array(n);
+    const fillColors = new Uint8Array(n * 3);
+    const strokeColors = new Uint8Array(n * 3);
+    const labelStrings: string[] = [];
+
+    scale.fill(styles.label.scaleDefault);
+    opacityFlags.fill(1);
+
+    let dst = 0;
+
+    // Hover point
+    if (hoverPointIndex !== null) {
+      labelStrings.push(this.getLabelImage(hoverPointIndex));
+      visibleLabels[dst] = hoverPointIndex;
+      scale[dst] = styles.label.scaleLarge;
+      opacityFlags[dst] = 0;
+      const fillRgb = util.styleRgbFromHexColor(styles.label.fillColorHover);
+      util.packRgbIntoUint8Array(
+        fillColors,
+        dst,
+        fillRgb[0],
+        fillRgb[1],
+        fillRgb[2]
+      );
+      const strokeRgb = util.styleRgbFromHexColor(
+        styles.label.strokeColorHover
+      );
+      util.packRgbIntoUint8Array(
+        strokeColors,
+        dst,
+        strokeRgb[0],
+        strokeRgb[1],
+        strokeRgb[1]
+      );
+      ++dst;
+    }
+
+    // Selected points
+    {
+      const fillRgb = util.styleRgbFromHexColor(styles.label.fillColorSelected);
+      const strokeRgb = util.styleRgbFromHexColor(
+        styles.label.strokeColorSelected
+      );
+
+      if (selectedPointIndices.size > 0) {
+        const arr = [...selectedPointIndices];
+        for (let i = 0; i < arr.length; i++) {
+          const imageIndex = arr[i];
+          labelStrings.push(this.getLabelImage(imageIndex));
+          visibleLabels[dst] = imageIndex;
+          scale[dst] = styles.label.scaleLarge;
+          opacityFlags[dst] = 0;
+          util.packRgbIntoUint8Array(
+            fillColors,
+            dst,
+            fillRgb[0],
+            fillRgb[1],
+            fillRgb[2]
+          );
+          util.packRgbIntoUint8Array(
+            strokeColors,
+            dst,
+            strokeRgb[0],
+            strokeRgb[1],
+            strokeRgb[2]
+          );
+          ++dst;
+        }
+      }
+    }
+
+    return new ImagesRenderParams(
+      new Float32Array(visibleLabels),
+      labelStrings,
+      scale,
+      opacityFlags,
       fillColors,
       strokeColors
     );
@@ -661,6 +822,13 @@ export class ScatterGL {
     return metadata && metadata.label != null ? `${metadata.label}` : '';
   }
 
+  private getLabelImage(i: number) {
+    const {dataset} = this;
+    if (!dataset) return '';
+    const metadata = dataset.metadata[i];
+    return metadata && metadata.image != null ? `${metadata.image}` : '';
+  }
+
   private initializeCanvasLabelsVisualizer() {
     if (!this.canvasLabelsVisualizer && this.containerElement) {
       this.canvasLabelsVisualizer = new ScatterPlotVisualizerCanvasLabels(
@@ -669,6 +837,26 @@ export class ScatterGL {
       );
     }
     return this.canvasLabelsVisualizer;
+  }
+
+  private initializeCanvasGroupsVisualizer() {
+    if (!this.canvasGroupsVisualizer && this.containerElement) {
+      this.canvasGroupsVisualizer = new ScatterPlotVisualizerCanvasGroups(
+        this.containerElement,
+        this.styles
+      );
+    }
+    return this.canvasGroupsVisualizer;
+  }
+
+  private initializeCanvasImagesVisualizer() {
+    if (!this.canvasImagesVisualizer && this.containerElement) {
+      this.canvasImagesVisualizer = new ScatterPlotVisualizerCanvasImages(
+        this.containerElement,
+        this.styles
+      );
+    }
+    return this.canvasImagesVisualizer;
   }
 
   private initialize3DLabelsVisualizer() {
@@ -754,7 +942,19 @@ export class ScatterGL {
       renderMode === RenderMode.POINT || renderMode === RenderMode.SPRITE;
     if (textLabelsRenderMode && this.showLabelsOnHover) {
       const visualizer = this.initializeCanvasLabelsVisualizer();
+      const groups = this.initializeCanvasGroupsVisualizer();
+      const imagesVisualizer = this.initializeCanvasImagesVisualizer();
       visualizer && activeVisualizers.push(visualizer);
+      imagesVisualizer && activeVisualizers.push(imagesVisualizer);
+
+      groups && activeVisualizers.push(groups);
+    }
+
+    const imageLabelsRenderMode =
+      renderMode === RenderMode.POINT || renderMode === RenderMode.TEXT;
+    if (imageLabelsRenderMode && this.showLabelsOnHover) {
+      const imagesVisualizer = this.initializeCanvasImagesVisualizer();
+      imagesVisualizer && activeVisualizers.push(imagesVisualizer);
     }
 
     this.scatterPlot.setActiveVisualizers(activeVisualizers);

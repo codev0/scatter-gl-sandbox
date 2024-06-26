@@ -214,3 +214,19 @@ export function encodeIdToRgb(i: number): {r: number; g: number; b: number} {
 export function decodeIdFromRgb(r: number, g: number, b: number): number {
   return (r << 16) | (g << 8) | b;
 }
+
+/** Given a point cloud, calculates the centroid */
+export function calculateCentroid(points: number[][]) {
+  const n = points.length;
+  let sumX = 0,
+    sumY = 0,
+    sumZ = 0;
+
+  points.forEach(point => {
+    sumX += point[0];
+    sumY += point[1];
+    sumZ += point[2];
+  });
+
+  return [sumX / n, sumY / n, sumZ / n];
+}

@@ -38,7 +38,7 @@
     "@types/three": "0.161"
   },
   "dependencies": {
-    "three": "0.161"
+   "three": "0.161"
   },
   "prettier": {
     "bracketSpacing": false,
