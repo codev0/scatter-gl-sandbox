@@ -39,7 +39,13 @@ export class LabelRenderParams {
  */
 export class GroupRenderParams {
   constructor(
-    public items: Map<string, number[]>,
+    public items: Map<
+      string,
+      {
+        label: string;
+        points: number[];
+      }
+    >,
     public scaleFactors: Float32Array,
     public useSceneOpacityFlags: Int8Array,
     public defaultFontSize: number,
@@ -55,7 +61,7 @@ export class GroupRenderParams {
 export class ImagesRenderParams {
   constructor(
     public pointIndices: Float32Array,
-    public imageUrls: string[],
+    public imageIds: string[],
     public scaleFactors: Float32Array,
     public useSceneOpacityFlags: Int8Array,
     public fillColors: Uint8Array,

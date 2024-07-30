@@ -22,6 +22,7 @@ limitations under the License.
 export interface PointMetadata {
   label?: string;
   group?: string;
+  groupLabel?: string;
   [key: string]: number | string | undefined;
 }
 

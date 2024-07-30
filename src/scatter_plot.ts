@@ -829,7 +829,7 @@ export class ScatterPlot {
     this.labels = labels;
   }
 
-  setGroups(groups: GroupRenderParams) {
+  setGroups(groups: GroupRenderParams | undefined) {
     this.groups = groups;
   }
 

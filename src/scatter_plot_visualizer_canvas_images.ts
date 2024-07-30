@@ -64,6 +64,7 @@ export class ScatterPlotVisualizerCanvasImages
     }
 
     const irc = rc.images;
+
     const sceneIs3D: boolean = rc.cameraType === CameraType.Perspective;
     const imageHeight = 120;
     const imageWidth = 120;
@@ -89,9 +90,10 @@ export class ScatterPlotVisualizerCanvasImages
 
     const n = Math.min(MAX_LABELS_ON_SCREEN, irc.pointIndices.length);
     for (let i = 0; i < n; ++i) {
-      const imageUrl = irc.imageUrls[i];
+      const imageId = irc.imageIds[i];
+      const img = document.getElementById(imageId) as HTMLImageElement;
 
-      if (imageUrl) {
+      if (imageId && img) {
         let point: THREE.Vector3;
         {
           const pi = irc.pointIndices[i];
@@ -134,10 +136,7 @@ export class ScatterPlotVisualizerCanvasImages
             this.gc.strokeStyle = 'gray';
             this.gc.fillStyle = 'cloudywhite';
             this.gc.strokeRect(x, y, imageWidth, imageHeight);
-            const img = document.getElementById('plot-img') as HTMLImageElement;
-            if (img) {
-              this.gc.drawImage(img, x, y, imageWidth, imageHeight);
-            }
+            this.gc.drawImage(img, x, y, imageWidth, imageHeight);
           }
         }
       }

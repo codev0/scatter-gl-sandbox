@@ -58,6 +58,9 @@ export interface ScatterGLParams {
   rotateOnStart?: boolean;
   selectEnabled?: boolean;
   showLabelsOnHover?: boolean;
+  showGroups?: boolean;
+  showLabels?: boolean;
+  showImages?: boolean;
   styles?: UserStyles;
   orbitControls?: Optional<OrbitControlParams>;
 }
@@ -78,6 +81,8 @@ export class ScatterGL {
   private selectEnabled = true;
   private showLabelsOnHover = true;
   private showGroups = true;
+  private showLabels = true;
+  private showImages = true;
 
   /* Visualizers, maintained by ScatterGL but used by ScatterPlot */
   private canvasLabelsVisualizer?: ScatterPlotVisualizerCanvasLabels;
@@ -127,6 +132,9 @@ export class ScatterGL {
     if (p.selectEnabled !== undefined) this.selectEnabled = p.selectEnabled;
     if (p.showLabelsOnHover !== undefined)
       this.showLabelsOnHover = p.showLabelsOnHover;
+    if (p.showGroups !== undefined) this.showGroups = p.showGroups;
+    if (p.showLabels !== undefined) this.showLabels = p.showLabels;
+    if (p.showImages !== undefined) this.showImages = p.showImages;
   }
 
   render(dataset: Dataset) {
@@ -186,6 +194,24 @@ export class ScatterGL {
     this.sequences = sequences;
     this.updatePolylineAttributes();
     this.setVisualizers();
+    this.renderScatterPlot();
+  }
+
+  setClustersVisible(visible: boolean) {
+    this.showGroups = visible;
+    this.updateScatterPlotAttributes();
+    this.renderScatterPlot();
+  }
+
+  setLabelsVisible(visible: boolean) {
+    this.showLabels = visible;
+    this.updateScatterPlotAttributes();
+    this.renderScatterPlot();
+  }
+
+  setImagesVisible(visible: boolean) {
+    this.showImages = visible;
+    this.updateScatterPlotAttributes();
     this.renderScatterPlot();
   }
 
@@ -306,7 +332,7 @@ export class ScatterGL {
     this.scatterPlot.setPointColors(pointColors);
     this.scatterPlot.setPointScaleFactors(pointScaleFactors);
     this.scatterPlot.setLabels(labels);
-    groups && this.scatterPlot.setGroups(groups);
+    this.scatterPlot.setGroups(groups ? groups : undefined);
     this.scatterPlot.setImages(images);
   }
 
@@ -419,7 +445,7 @@ export class ScatterGL {
         styles.label.strokeColorSelected
       );
 
-      if (selectedPointIndices.size > 0) {
+      if (selectedPointIndices.size > 0 && this.showLabels) {
         const arr = [...selectedPointIndices];
         for (let i = 0; i < arr.length; i++) {
           const labelIndex = arr[i];
@@ -471,7 +497,13 @@ export class ScatterGL {
       opacityFlags.fill(1);
 
       const fillRgb = util.styleRgbFromHexColor(styles.label.fillColorHover);
-      const m = new Map<string, number[]>();
+      const m = new Map<
+        string,
+        {
+          label: string;
+          points: [number, number, number];
+        }
+      >();
       dataset?.metadata.forEach((d, i) => {
         scale[i] = styles.label.scaleLarge;
         opacityFlags[i] = 0;
@@ -495,9 +527,12 @@ export class ScatterGL {
         if (d.group) {
           const group = d.group;
           if (m.has(group)) {
-            m.get(group)?.push(i);
+            m.get(group)?.points.push(i);
           } else {
-            m.set(group, [i]);
+            m.set(group, {
+              label: d.groupLabel || d.group,
+              points: [i, i, i],
+            });
           }
         }
       });
@@ -523,7 +558,7 @@ export class ScatterGL {
     const opacityFlags = new Int8Array(n);
     const fillColors = new Uint8Array(n * 3);
     const strokeColors = new Uint8Array(n * 3);
-    const labelStrings: string[] = [];
+    const imageIds: string[] = [];
 
     scale.fill(styles.label.scaleDefault);
     opacityFlags.fill(1);
@@ -532,7 +567,7 @@ export class ScatterGL {
 
     // Hover point
     if (hoverPointIndex !== null) {
-      labelStrings.push(this.getLabelImage(hoverPointIndex));
+      imageIds.push(this.getPointImage(hoverPointIndex));
       visibleLabels[dst] = hoverPointIndex;
       scale[dst] = styles.label.scaleLarge;
       opacityFlags[dst] = 0;
@@ -564,11 +599,11 @@ export class ScatterGL {
         styles.label.strokeColorSelected
       );
 
-      if (selectedPointIndices.size > 0) {
+      if (selectedPointIndices.size > 0 && this.showImages) {
         const arr = [...selectedPointIndices];
         for (let i = 0; i < arr.length; i++) {
           const imageIndex = arr[i];
-          labelStrings.push(this.getLabelImage(imageIndex));
+          imageIds.push(this.getPointImage(imageIndex));
           visibleLabels[dst] = imageIndex;
           scale[dst] = styles.label.scaleLarge;
           opacityFlags[dst] = 0;
@@ -593,7 +628,7 @@ export class ScatterGL {
 
     return new ImagesRenderParams(
       new Float32Array(visibleLabels),
-      labelStrings,
+      imageIds,
       scale,
       opacityFlags,
       fillColors,
@@ -822,7 +857,7 @@ export class ScatterGL {
     return metadata && metadata.label != null ? `${metadata.label}` : '';
   }
 
-  private getLabelImage(i: number) {
+  private getPointImage(i: number) {
     const {dataset} = this;
     if (!dataset) return '';
     const metadata = dataset.metadata[i];

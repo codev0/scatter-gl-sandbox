@@ -84,7 +84,7 @@ const isolate2: Data = {
 };
 
 const centroid: Data = {
-  groupNames: ['group 0', 'group 1', 'group 2'],
+  groupNames: ['lorem  0', 'lorem  1', 'lorem  2'],
   groups: [0, 0, 0, 1, 1, 1, 2, 2, 2],
   labels: Array.from({length: 9}, (_, i) => i),
   labelNames: [
@@ -183,10 +183,102 @@ function makeDataPoints(
 }
 
 const {dataPoints, metadata} = makeDataPoints(centroid);
-console.log(dataPoints, metadata);
 
 const sequences = makeSequences(dataPoints, metadata);
-const dataset = new Dataset(dataPoints, metadata);
+const ds = {
+  points: [
+    [7.783150672912598, 10.699580192565918, 6.143429279327393],
+    [7.227686405181885, 14.039731979370117, 3.092937469482422],
+    [5.487361907958984, 12.982627868652344, -0.7097371220588684],
+    [-2.4263644218444824, 0.6159617304801941, 6.790606498718262],
+    [-2.610590696334839, 0.4562993049621582, 6.777414798736572],
+    [-2.5131587982177734, 0.8658394813537598, 5.979968070983887],
+    [10.15555477142334, 8.303173065185547, 10.61386775970459],
+    [10.403385162353516, 5.089134216308594, 10.81881046295166],
+    [10.191771507263184, 6.147909164428711, 10.965229034423828],
+  ] as Point3D[],
+  metadata: [
+    {
+      id: '609',
+      label: '609',
+      image: 'plot-img',
+      color: 'rgba(117, 117, 217, 0.7)',
+      hoverColor: 'rgba(118, 11, 79, 0.7)',
+      group: '11',
+      groupLabel: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. 11',
+    },
+    {
+      id: '608',
+      label: '608',
+      color: 'rgba(117, 117, 217, 0.7)',
+      hoverColor: 'rgba(118, 11, 79, 0.7)',
+      group: '11',
+      groupLabel: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. 11',
+    },
+    {
+      id: '607',
+      label: '607',
+      image: 'plot-img',
+      color: 'rgba(117, 117, 217, 0.7)',
+      hoverColor: 'rgba(118, 11, 79, 0.7)',
+      group: '11',
+      groupLabel: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. 11',
+    },
+    {
+      id: '1077',
+      label: '1077',
+      image: 'plot-img',
+      color: 'rgba(117, 117, 217, 0.7)',
+      hoverColor: 'rgba(118, 11, 79, 0.7)',
+      group: '35',
+      groupLabel: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. 35',
+    },
+    {
+      id: '8c98e19e-b41d-4a58-b22d-0d16b837ede4',
+      label: '8c98e19e-b41d-4a58-b22d-0d16b837ede4',
+      image: 'plot-img',
+      color: 'rgba(117, 117, 217, 0.7)',
+      hoverColor: 'rgba(118, 11, 79, 0.7)',
+      group: '35',
+      groupLabel: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. 35',
+    },
+    {
+      id: '1078',
+      label: '1078',
+      color: 'rgba(117, 117, 217, 0.7)',
+      image: 'plot-img',
+      hoverColor: 'rgba(118, 11, 79, 0.7)',
+      group: '35',
+      groupLabel: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. 35',
+    },
+    {
+      id: '1455',
+      label: '1455',
+      color: 'rgba(117, 117, 217, 0.7)',
+      hoverColor: 'rgba(118, 11, 79, 0.7)',
+      group: '6',
+      groupLabel: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. 6',
+    },
+    {
+      id: '1457',
+      label: '1457',
+      color: 'rgba(117, 117, 217, 0.7)',
+      hoverColor: 'rgba(118, 11, 79, 0.7)',
+      group: '6',
+      groupLabel: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. 6',
+    },
+    {
+      id: '1479',
+      label: '1479',
+      color: 'rgba(117, 117, 217, 0.7)',
+      image: 'plot-img',
+      hoverColor: 'rgba(118, 11, 79, 0.7)',
+      group: '6',
+      groupLabel: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. 6',
+    },
+  ],
+};
+const dataset = new Dataset(ds.points, ds.metadata);
 
 dataset.setSpriteMetadata({
   spriteImage: 'spritesheet.png',
@@ -231,8 +323,19 @@ const scatterGL = new ScatterGL(containerElement, {
   orbitControls: {
     zoomSpeed: 1.125,
   },
+  showGroups: false,
+  showImages: false,
+  showLabels: false,
+  styles: {
+    label: {
+      fontSize: 8,
+      fillWidth: 0,
+      fillColorHover: '#828282',
+      strokeWidth: 1,
+    },
+  },
 });
-// scatterGL.select(Array.from({length: dataPoints.length}, (_, i) => i));
+scatterGL.select(Array.from({length: 9}, (_, i) => i));
 scatterGL.render(dataset);
 
 // Add in a resize observer for automatic window resize.
@@ -315,17 +418,36 @@ const isolateToggle = document.querySelector<HTMLInputElement>(
 )!;
 isolateToggle.addEventListener('change', (e: any) => {
   const checked = isolateToggle.checked;
-  const {dataPoints, metadata} = checked
-    ? makeDataPoints(isolate2)
-    : makeDataPoints(isolate1);
-  scatterGL.updateDataset(new Dataset(dataPoints, metadata));
+  const {dataPoints, metadata} = makeDataPoints(isolate1);
+  scatterGL.updateDataset(
+    checked
+      ? new Dataset(dataPoints, metadata)
+      : new Dataset(ds.points, ds.metadata)
+  );
 });
 const clusterToggle = document.querySelector<HTMLInputElement>(
   'input[name="cluster"]'
 )!;
 clusterToggle.addEventListener('change', (e: any) => {
   const checked = clusterToggle.checked;
-  // scatterGL.showClusterLabels(checked);
+  scatterGL.setClustersVisible(checked);
+  scatterGL.resize();
+});
+const labelsToggle = document.querySelector<HTMLInputElement>(
+  'input[name="labels"]'
+)!;
+labelsToggle.addEventListener('change', (e: any) => {
+  const checked = labelsToggle.checked;
+  scatterGL.select(Array.from({length: 9}, (_, i) => i));
+  scatterGL.setLabelsVisible(checked);
+});
+const imagesToggle = document.querySelector<HTMLInputElement>(
+  'input[name="images"]'
+)!;
+imagesToggle.addEventListener('change', (e: any) => {
+  const checked = imagesToggle.checked;
+  scatterGL.select(Array.from({length: 9}, (_, i) => i));
+  scatterGL.setImagesVisible(checked);
 });
 const dimensionsToggle = document.querySelector<HTMLInputElement>(
   'input[name="3D"]'

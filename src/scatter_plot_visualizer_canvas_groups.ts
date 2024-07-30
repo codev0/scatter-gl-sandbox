@@ -36,8 +36,6 @@ export class ScatterPlotVisualizerCanvasGroups
   private gc: CanvasRenderingContext2D;
   private canvas: HTMLCanvasElement;
   private scene!: THREE.Scene;
-  private centroidsMap: Map<string, number[]> = new Map();
-  private centroid: THREE.Mesh = new THREE.Mesh();
 
   constructor(container: HTMLElement, private styles: Styles) {
     this.canvas = document.createElement('canvas');
@@ -111,16 +109,15 @@ export class ScatterPlotVisualizerCanvasGroups
     const n = Math.min(MAX_LABELS_ON_SCREEN, grc.items.size);
     for (let i = 0; i < n; ++i) {
       const list = Array.from(grc.items);
-      const text = list[i][0];
+      const text = list[i][1].label;
       let point: THREE.Vector3;
       const centroid = util.calculateCentroid(
-        list[i][1].map(j => [
+        list[i][1].points.map(j => [
           this.worldSpacePointPositions[j * 3],
           this.worldSpacePointPositions[j * 3 + 1],
           this.worldSpacePointPositions[j * 3 + 2],
         ])
       );
-      console.log(centroid);
 
       point = new THREE.Vector3(centroid[0], centroid[1], centroid[2]);
       camToPoint.copy(camPos).sub(point);
